@@ -58,12 +58,11 @@ def main():
     algoMap, inputImg = parseinput("hardinput.txt")
 
     # add five layers of "infiniteness" to be able to gain effect of the infinity on the signal
-    inputImg = addLayers(inputImg, 101)
+    img = addLayers(inputImg, 5)
 
     # enhance the image twice
-    img = inputImg
-    for _ in range(50):
-        img = enhance(img, algoMap)
+    img = enhance(img, algoMap)
+    img = enhance(img, algoMap)
 
     return len([1 for row in img for c in row if c == "1"])
 
