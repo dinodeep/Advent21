@@ -1,3 +1,4 @@
+import heapq
 
 
 def parseinput(file):
@@ -10,26 +11,45 @@ def parseinput(file):
     return lines[1] + lines[2] + lines[3]
 
 
-def getCheapestCost(start, goal):
+def getHeuristic(state):
+    hCost = 0
 
-    # create priority queue
-    # create found set
-    # create cost dictionary (maps states to cheapest cost)
+    # iterate through each position
+    for i, c in enumerate(state):
+        if c != ".":
+            # calculate distance from i to target location
+            if c == "A":
+                targets = [2, 11, 15]
+                mult = 1
+            elif c == "B":
+                targets = [4, 12, 16]
+                mult = 10
+            elif c == "C":
+                targets = [6, 13, 17]
+                mult = 100
+            else: # c == "D"
+                targets = [8, 14, 18]
+                mult = 1000
 
-    # while priority queue is not empty:
+            # horizontal distance
+            if i in targets:
+                horizontal = 0
+                up = 0
+            else:
+                if i > 10:
+                    # if in different side room -- get position when exiting side room
+                    horizontal = abs(((i - 10) * 2) - targets[0])
+                    up = 1 if i < 15 else 2
+                else:
+                    horizontal = abs(i - targets[0])
+                    up = 0
 
-    # pop cost and state node off of queue
+            hCost += mult * (horizontal + up)
 
-    # add it to found set
+    if 11 - state[:11].count(".") > 4:
+        hCost += 10000
 
-    # if goal -- return its cost
-
-    # otherwise get all neighboring states with updated costs
-    # for each neighboring state
-    # if state not already found and new cost is cheaper than one that has already been found
-    # add to priority queue
-
-    pass
+    return hCost
 
 
 def makeMove(state, startIdx, endIdx, cost):
@@ -45,11 +65,12 @@ def makeMove(state, startIdx, endIdx, cost):
         cost += 1000
 
     if startIdx < endIdx:
-        newState = state[0:startIdx] + "." + state[startIdx+1:endIdx] + amphipod + state[endIdx+1]
+        newState = state[0:startIdx] + "." + state[startIdx+1:endIdx] + amphipod + state[endIdx+1:]
     else:
-        newState = state[0:endIdx] + amphipod + state[endIdx+1:startIdx] + "." + state[startIdx+1]
+        newState = state[0:endIdx] + amphipod + state[endIdx+1:startIdx] + "." + state[startIdx+1:]
 
-    return newState, cost
+    heurCost = getHeuristic(newState)
+    return newState, cost, heurCost
 
 
 def getNeighbors(state, cost):
@@ -92,6 +113,49 @@ def getNeighbors(state, cost):
     return neighbors
 
 
+def getCheapestCost(start, goal):
+
+    # create priority queue
+    # create visisted dictionary
+    # create cost dictionary (maps states to cheapest cost)
+    visited = set()
+    bestcosts = {start: 0}
+
+    heap = []
+    heapq.heappush(heap, (getHeuristic(start), 0, start))
+
+    iter = 0
+
+    # while priority queue is not empty:
+    while True:
+        if heap.count == 0:
+            return None
+
+        # pop cost and state node off of queue and say that it has been visited
+        cost, trueCost, state = heapq.heappop(heap)
+        visited.add(state)
+
+        if iter % 10000 == 0:
+            print(state[:11], state[11:15], state[15:], trueCost)
+        if iter % 1000000 == 0:
+            input()
+
+        # if goal -- return its cost
+        if state == goal:
+            return trueCost
+
+        # iterate through all neighboring states with updated costs
+        neighbors = getNeighbors(state, trueCost)
+        for newState, newCost, heurCost in neighbors:
+            if newState not in visited:
+                # if newState not already found and new cost is cheaper than one that has already been found, add to heap
+                if newState not in bestcosts or newCost < bestcosts[newState]:
+                    bestcosts[newState] = newCost
+                    heapq.heappush(heap, (newCost + heurCost, newCost, newState))
+
+        iter += 1
+
+
 def main():
 
     # 0-10 = top row
@@ -100,7 +164,6 @@ def main():
     # Goal: ". . . . . . . . . . . A B C D A B C D"
 
     start = parseinput("easyinput.txt")
-
     goal = "...........ABCDABCD"
 
     cost = getCheapestCost(start, goal)
